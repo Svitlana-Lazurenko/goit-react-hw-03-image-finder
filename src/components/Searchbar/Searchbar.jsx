@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-// import PropTypes from 'prop-types';
-// import  from '../../styles/styles.css';
+import { CiSearch } from 'react-icons/ci';
+import css from './Searchbar.module.css';
 
 class Searchbar extends Component {
   state = {
@@ -14,29 +14,34 @@ class Searchbar extends Component {
   handleSubmit = event => {
     event.preventDefault();
 
-    if (this.state.searchName.trim() === '') {
-      alert('Input search');
+    const { searchName } = this.state;
+
+    if (searchName.trim() === '') {
+      alert('Enter the value.');
       return;
     }
 
-    this.props.onSubmit(this.state.searchName);
+    this.props.onSubmit(searchName);
     this.setState({ searchName: '' });
   };
 
   render() {
+    const { searchName } = this.state;
+
     return (
-      <header className="searchbar">
-        <form className="form" onSubmit={this.handleSubmit}>
-          <button type="submit" className="button">
-            <span className="button-label">Search</span>
+      <header className={css.Searchbar}>
+        <form className={css.SearchForm} onSubmit={this.handleSubmit}>
+          <button type="submit" className={css.SearchForm_button}>
+            <CiSearch className={css.SearchForm_button_icon} />
           </button>
 
           <input
-            className="input"
+            className={css.SearchForm_input}
             type="text"
             autoComplete="off"
             autoFocus
             placeholder="Search images and photos"
+            value={searchName}
             onChange={this.handleNameChange}
           />
         </form>
@@ -46,7 +51,3 @@ class Searchbar extends Component {
 }
 
 export default Searchbar;
-
-// Searchbar.propTypes = {
-
-// };

@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
-// import PropTypes from 'prop-types';
+import PropTypes from 'prop-types';
 import ImageGalleryItem from '../ImageGalleryItem/ImageGalleryItem';
 import Loader from '../Loader/Loader';
 import Button from '../Button/Button';
 import imagesAPI from '../../services/image-api';
-// import  from '../../styles/styles.css';
+import css from './ImageGallery.module.css';
 
 const Status = {
   IDLE: 'idle',
@@ -15,30 +15,39 @@ const Status = {
 
 class ImageGallery extends Component {
   state = {
+    status: Status.IDLE,
+    searchName: '',
+    page: 0,
     imagesArr: [],
     error: null,
-    status: Status.IDLE,
-    page: 1,
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    const prevName = prevProps.searchName;
-    const nextName = this.props.searchName;
-    const prevPage = prevState.page;
-    const nextPage = this.state.page;
-    const prevImages = prevState.imagesArr;
+  static getDerivedStateFromProps(nextProps, prevState) {
+    if (nextProps.searchName !== prevState.searchName) {
+      return { page: 1, searchName: nextProps.searchName, imagesArr: [] };
+    }
+    return null;
+  }
 
-    if (prevPage !== nextPage || (nextPage === 1 && prevName !== nextName)) {
+  componentDidUpdate(prevProps, prevState) {
+    const { imagesArr, searchName, page } = this.state;
+    const prevName = prevProps.searchName;
+    const prevPage = prevState.page;
+
+    if (prevPage !== page || prevName !== searchName) {
       this.setState({ status: Status.PENDING });
 
       imagesAPI
-        .fetchImages(nextName, nextPage)
-        .then(imagesArr =>
+        .fetchImages(searchName, page)
+        .then(imagesObj => {
+          if (imagesObj.hits.length === 0) {
+            return Promise.reject(new Error(`${searchName} not found`));
+          }
           this.setState({
-            imagesArr: [...prevImages, ...imagesArr.hits],
+            imagesArr: [...imagesArr, ...imagesObj.hits],
             status: Status.RESOLVED,
-          })
-        )
+          });
+        })
         .catch(error => this.setState({ error, status: Status.REJECTED }));
     }
   }
@@ -51,33 +60,56 @@ class ImageGallery extends Component {
 
   render() {
     const { imagesArr, error, status, page } = this.state;
-    const { searchName } = this.props;
+    const { searchName, showModal } = this.props;
 
     if (status === 'idle') {
-      return <div>Input search</div>;
+      return null;
     }
 
     if (status === 'pending') {
-      return <Loader searchName={searchName} />;
+      return (
+        <>
+          <ul className={css.ImageGallery}>
+            {imagesArr.map(({ id, webformatURL, largeImageURL, tags }) => (
+              <ImageGalleryItem
+                key={id}
+                webformatImage={webformatURL}
+                largeImage={largeImageURL}
+                showModal={showModal}
+                description={tags}
+              />
+            ))}
+          </ul>
+          <Loader />;
+        </>
+      );
     }
 
     if (status === 'rejected') {
-      return <div>{error.message}</div>;
+      return <div className={css.ErrorMessage}>{error.message}</div>;
     }
 
     if (status === 'resolved') {
       return (
         <>
-          <ul className="gallery">
-            {imagesArr.map(({ id, webformatURL, largeImageURL }) => (
-              <ImageGalleryItem key={id} webformatImage={webformatURL} />
+          <ul className={css.ImageGallery}>
+            {imagesArr.map(({ id, webformatURL, largeImageURL, tags }) => (
+              <ImageGalleryItem
+                key={id}
+                webformatImage={webformatURL}
+                largeImage={largeImageURL}
+                showModal={showModal}
+                description={tags}
+              />
             ))}
           </ul>
-          <Button
-            page={page}
-            searchName={searchName}
-            onClick={this.handlePageIncrement}
-          />
+          {imagesArr.length > 0 && (
+            <Button
+              page={page}
+              searchName={searchName}
+              onClick={this.handlePageIncrement}
+            />
+          )}
         </>
       );
     }
@@ -86,5 +118,7 @@ class ImageGallery extends Component {
 
 export default ImageGallery;
 
-// ImageGallery.propTypes = {
-// };
+ImageGallery.propTypes = {
+  searchName: PropTypes.string.isRequired,
+  showModal: PropTypes.func.isRequired,
+};
