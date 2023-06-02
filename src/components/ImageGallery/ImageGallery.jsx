@@ -20,6 +20,7 @@ class ImageGallery extends Component {
     page: 0,
     imagesArr: [],
     error: null,
+    totalHits: 0,
   };
 
   static getDerivedStateFromProps(nextProps, prevState) {
@@ -45,6 +46,7 @@ class ImageGallery extends Component {
           }
           this.setState({
             imagesArr: [...imagesArr, ...imagesObj.hits],
+            totalHits: imagesObj.totalHits,
             status: Status.RESOLVED,
           });
         })
@@ -59,7 +61,7 @@ class ImageGallery extends Component {
   };
 
   render() {
-    const { imagesArr, error, status, page } = this.state;
+    const { imagesArr, error, status, page, totalHits } = this.state;
     const { searchName, showModal } = this.props;
 
     if (status === 'idle') {
@@ -103,7 +105,7 @@ class ImageGallery extends Component {
               />
             ))}
           </ul>
-          {imagesArr.length > 0 && (
+          {totalHits > imagesArr.length && (
             <Button
               page={page}
               searchName={searchName}
